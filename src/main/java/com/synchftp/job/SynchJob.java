@@ -1,5 +1,6 @@
 package com.synchftp.job;
 
+import com.synchftp.model.Auth;
 import com.synchftp.model.FileSetting;
 import com.synchftp.model.Response;
 import com.synchftp.model.Settings;
@@ -75,10 +76,13 @@ public class SynchJob implements Job {
                         List<String> contentList = contentMap.get(fileName_i);
                         for(String content_i : contentList) {
                             String url = fileSetting_i.getFileNameToUrl().get(fileName_i);
-                            //Response response = calloutService.sendFileToSF(url, content_i);
-                            //if (response.getSuccess()) {
+                            Auth auth = calloutService.auth();
+                            if(auth!=null) {
+                                Response response = calloutService.sendFileToSF(url,auth.getAccess_token(),content_i);
+                                if (response.getSuccess()) {
 
-                            //}
+                                }
+                            }
                         }
                     }
                 }
