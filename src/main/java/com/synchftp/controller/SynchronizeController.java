@@ -1,6 +1,7 @@
 package com.synchftp.controller;
 import com.synchftp.model.Response;
-import com.synchftp.model.Settings;
+import com.synchftp.model.Setting;
+import com.synchftp.model.SettingList;
 import com.synchftp.service.CalloutService;
 import com.synchftp.service.FTPUtil;
 import com.synchftp.service.SynchUtil;
@@ -11,14 +12,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.quartz.JobBuilder.newJob;
-import static org.quartz.TriggerBuilder.newTrigger;
 
 /**
  * Created by bhadz on 01.02.2018.
@@ -44,19 +43,19 @@ public class SynchronizeController {
     private SynchUtil synchUtil;
 
     @PostMapping("/store")
-    public ResponseEntity storeFile(@RequestBody Settings settings){
+    public ResponseEntity storeFile(@RequestBody Setting setting){
         ResponseEntity<Response> response = ResponseEntity.status(401).body(new Response("Invalid credentials"));
         FTPClient ftpClient = new FTPClient();
         try {
-            if (ftpUtil.createConnection(settings, ftpClient)) {
-                if(!ftpClient.changeWorkingDirectory(settings.getPath())){
+            if (ftpUtil.createConnection(setting, ftpClient)) {
+                if(!ftpClient.changeWorkingDirectory(setting.getPath())){
                     response = ResponseEntity.status(404).body(new Response("Directory not exist"));
                 }else{
-                    if(ftpUtil.isFileExist(ftpClient,settings.getFileName())) {
+                    if(ftpUtil.isFileExist(ftpClient,setting.getFileName())) {
                         response = ResponseEntity.status(409).body(new Response("File already exist"));
                     }else{
-                        OutputStream outputStream = ftpClient.storeFileStream(settings.getFileName());
-                        String contentRaw = settings.getContentRaw();
+                        OutputStream outputStream = ftpClient.storeFileStream(setting.getFileName());
+                        String contentRaw = setting.getContentRaw();
                         byte[] fileContent = Base64.getDecoder().decode(contentRaw);
                         outputStream.write(fileContent);
                         outputStream.flush();
@@ -76,20 +75,26 @@ public class SynchronizeController {
     }
 
     @PostMapping("/synch")
-    public ResponseEntity<Response> synch(@RequestBody Settings settings){
-        ResponseEntity<Response> response = ResponseEntity.status(401).body(new Response("Invalid credentials"));
-        FTPClient ftpClient = new FTPClient();
-        try {
-            if(ftpUtil.createConnection(settings,ftpClient)){
-                synchUtil.scheduleJob(ftpClient,settings);
-                response = ResponseEntity.status(200).body(new Response());
-            }else{
-                ftpUtil.closeConnection(ftpClient);
-            }
-        }catch (Exception e){
-            ftpUtil.closeConnection(ftpClient);
-            response = ResponseEntity.status(500).body(new Response(e.getMessage()));
+    public ResponseEntity<Map<String,Response>> synch(@RequestBody SettingList settingList){
+        Map<String,Response> responseMap = new HashMap<>();
+        for(Setting setting_i : settingList.getManufacturers()){
+            responseMap.put(setting_i.getUrl(),new Response("Invalid credentials"));
         }
+        for(Setting setting_i : settingList.getManufacturers()) {
+            FTPClient ftpClient = new FTPClient();
+            try {
+                if (ftpUtil.createConnection(setting_i, ftpClient)) {
+                    synchUtil.scheduleJob(ftpClient, setting_i);
+                    responseMap.put(setting_i.getUrl(),new Response());
+                } else {
+                    ftpUtil.closeConnection(ftpClient);
+                }
+            }catch (Exception e){
+                ftpUtil.closeConnection(ftpClient);
+                responseMap.put(setting_i.getUrl(),new Response(e.getMessage()));
+            }
+        }
+        ResponseEntity<Map<String,Response>> response = ResponseEntity.status(200).body(responseMap);
         return response;
     }
 }

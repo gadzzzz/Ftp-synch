@@ -1,9 +1,6 @@
 package com.synchftp.job;
 
-import com.synchftp.model.Auth;
-import com.synchftp.model.FileSetting;
-import com.synchftp.model.Response;
-import com.synchftp.model.Settings;
+import com.synchftp.model.*;
 import com.synchftp.service.CalloutService;
 import com.synchftp.service.FTPUtil;
 import org.apache.commons.net.ftp.FTPClient;
@@ -25,61 +22,68 @@ public class SynchJob implements Job {
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
         JobDataMap data = jobExecutionContext.getJobDetail().getJobDataMap();
         FTPClient ftpClient = (FTPClient) data.get("ftpClient");
-        Settings settings = (Settings) data.get("settings");
+        Setting settings = (Setting) data.get("settings");
         FTPUtil ftpUtil = (FTPUtil) data.get("ftpUtil");
         CalloutService calloutService = (CalloutService) data.get("calloutService");
         try {
-            List<FileSetting> fileSettingList = settings.getFileSettingList();
+            List<FileSetting> fileSettingRequestList =  settings.getFileSettingList();
+            Map<String,Map<String,String>> settingMap = new HashMap<>();
+            for(FileSetting setting2 : fileSettingRequestList){
+                if(!settingMap.containsKey(setting2.getPath())){
+                    settingMap.put(setting2.getPath(),new HashMap<>());
+                }
+                settingMap.get(setting2.getPath()).put(setting2.getName(),setting2.getUrl());
+            }
             Map<String,FTPFile[]> pathToFileMap = new HashMap<>();
-            for(FileSetting fileSetting_i : fileSettingList){
-                pathToFileMap.put(fileSetting_i.getPath(),ftpUtil.directoryList(ftpClient,fileSetting_i.getPath()));
+            for(String path_i : settingMap.keySet()){
+                pathToFileMap.put(path_i,ftpUtil.directoryList(ftpClient,path_i));
             }
             Map<String,List<String>> fileNameToPath = new HashMap<>();
-            for(FileSetting fileSetting_i : fileSettingList){
-                if(pathToFileMap.containsKey(fileSetting_i.getPath())){
-                    FTPFile[] fileList = pathToFileMap.get(fileSetting_i.getPath());
+            for(String path_i : settingMap.keySet()){
+                if(pathToFileMap.containsKey(path_i)){
+                    FTPFile[] fileList = pathToFileMap.get(path_i);
                     for(FTPFile file_i : fileList){
-                        Set<String> fileNameSet = fileSetting_i.getFileNameToUrl().keySet();
+                        Set<String> fileNameSet = settingMap.get(path_i).keySet();
                         for(String fileName_i : fileNameSet){
                             if(file_i.getName().startsWith(fileName_i)){
-                                if(!fileNameToPath.containsKey(fileSetting_i.getPath()+fileName_i)){
-                                    fileNameToPath.put(fileSetting_i.getPath()+fileName_i,new ArrayList<>());
+                                if(!fileNameToPath.containsKey(path_i+fileName_i)){
+                                    fileNameToPath.put(path_i+fileName_i,new ArrayList<>());
                                 }
-                                fileNameToPath.get(fileSetting_i.getPath()+fileName_i).add(fileSetting_i.getPath()+"/"+file_i.getName());
+                                fileNameToPath.get(path_i+fileName_i).add(path_i+"/"+file_i.getName());
                             }
                         }
                     }
                 }
             }
             Map<String,Map<String,List<String>>> pathToContentMap = new HashMap<>();
-            for(FileSetting fileSetting_i : fileSettingList){
-                for(String fileName : fileSetting_i.getFileNameToUrl().keySet()) {
-                    if (fileNameToPath.containsKey(fileSetting_i.getPath()+fileName)) {
-                        List<String> fileToDownloadList = fileNameToPath.get(fileSetting_i.getPath()+fileName);
+            for(String path_i : settingMap.keySet()){
+                for(String fileName : settingMap.get(path_i).keySet()) {
+                    if (fileNameToPath.containsKey(path_i+fileName)) {
+                        List<String> fileToDownloadList = fileNameToPath.get(path_i+fileName);
                         for (String file_i : fileToDownloadList) {
                             String content = ftpUtil.readFile(ftpClient, file_i);
-                            if(!pathToContentMap.containsKey(fileSetting_i.getPath())) {
-                                pathToContentMap.put(fileSetting_i.getPath(), new HashMap<String,List<String>>());
+                            if(!pathToContentMap.containsKey(path_i)) {
+                                pathToContentMap.put(path_i, new HashMap<String,List<String>>());
                             }
-                            if(!pathToContentMap.get(fileSetting_i.getPath()).containsKey(fileName)){
-                                pathToContentMap.get(fileSetting_i.getPath()).put(fileName, new ArrayList<>());
+                            if(!pathToContentMap.get(path_i).containsKey(fileName)){
+                                pathToContentMap.get(path_i).put(fileName, new ArrayList<>());
                             }
-                            pathToContentMap.get(fileSetting_i.getPath()).get(fileName).add(content);
+                            pathToContentMap.get(path_i).get(fileName).add(content);
                         }
                     }
                 }
             }
-            for(FileSetting fileSetting_i : fileSettingList){
-                if(pathToContentMap.containsKey(fileSetting_i.getPath())){
-                    Map<String,List<String>> contentMap = pathToContentMap.get(fileSetting_i.getPath());
+            Auth auth = calloutService.auth();
+            for(String path_i : settingMap.keySet()){
+                if(pathToContentMap.containsKey(path_i)){
+                    Map<String,List<String>> contentMap = pathToContentMap.get(path_i);
                     for(String fileName_i : contentMap.keySet()){
                         List<String> contentList = contentMap.get(fileName_i);
                         for(String content_i : contentList) {
-                            String url = fileSetting_i.getFileNameToUrl().get(fileName_i);
-                            Auth auth = calloutService.auth();
+                            String url = settingMap.get(path_i).get(fileName_i);
                             if(auth!=null) {
                                 Response response = calloutService.sendFileToSF(url,auth.getAccess_token(),content_i);
-                                if (response.getSuccess()) {
+                                if(response.getSuccess()){
 
                                 }
                             }

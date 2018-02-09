@@ -1,21 +1,27 @@
 package com.synchftp.model;
 
-import java.util.List;
-import java.util.Map;
-
 /**
- * Created by bhadz on 05.02.2018.
+ * Created by bhadz on 08.02.2018.
  */
 public class FileSetting {
-    private Map<String,String> fileNameToUrl;
+    private String url;
+    private String name;
     private String path;
 
-    public Map<String, String> getFileNameToUrl() {
-        return fileNameToUrl;
+    public String getUrl() {
+        return url;
     }
 
-    public void setFileNameToUrl(Map<String, String> fileNameToUrl) {
-        this.fileNameToUrl = fileNameToUrl;
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getPath() {

@@ -1,10 +1,9 @@
 package com.synchftp.service;
 
-import com.synchftp.model.Settings;
+import com.synchftp.model.Setting;
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
-import org.springframework.stereotype.Service;
 
 import java.io.*;
 
@@ -18,7 +17,7 @@ public class FTPUtil {
         return fileList;
     }
 
-    public boolean createConnection(Settings settings,FTPClient ftpClient) throws IOException {
+    public boolean createConnection(Setting settings, FTPClient ftpClient) throws IOException {
         ftpClient.connect(settings.getUrl(), settings.getPort());
         boolean isLogged = false;
         if(ftpClient.isConnected()) {
