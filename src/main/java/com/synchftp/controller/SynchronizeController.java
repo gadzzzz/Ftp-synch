@@ -13,9 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.OutputStream;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.quartz.JobBuilder.newJob;
 
@@ -75,7 +73,7 @@ public class SynchronizeController {
     }
 
     @PostMapping("/synch")
-    public ResponseEntity<Map<String,Response>> synch(@RequestBody SettingList settingList){
+    public ResponseEntity<List<Response>> synch(@RequestBody SettingList settingList){
         Map<String,Response> responseMap = new HashMap<>();
         for(Setting setting_i : settingList.getManufacturers()){
             responseMap.put(setting_i.getUrl(),new Response("Invalid credentials"));
@@ -94,7 +92,13 @@ public class SynchronizeController {
                 responseMap.put(setting_i.getUrl(),new Response(e.getMessage()));
             }
         }
-        ResponseEntity<Map<String,Response>> response = ResponseEntity.status(200).body(responseMap);
+        List<Response> responseList = new ArrayList<>();
+        for(String url_i : responseMap.keySet()){
+            Response response = responseMap.get(url_i);
+            response.setURL(url_i);
+            responseList.add(response);
+        }
+        ResponseEntity<List<Response>> response = ResponseEntity.status(200).body(responseList);
         return response;
     }
 }

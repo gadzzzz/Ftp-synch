@@ -9,6 +9,7 @@ import java.util.List;
 public class Response {
     private Boolean success;
     private String message;
+    private String URL;
 
     public Response() {
         this.success = true;
@@ -33,5 +34,13 @@ public class Response {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getURL() {
+        return URL;
+    }
+
+    public void setURL(String URL) {
+        this.URL = URL;
     }
 }
