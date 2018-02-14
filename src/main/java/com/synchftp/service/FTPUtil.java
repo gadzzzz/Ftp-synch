@@ -36,6 +36,9 @@ public class FTPUtil {
         if (inputStream == null || returnCode == 550) {
             return false;
         }
+        if(inputStream != null){
+            inputStream.close();
+        }
         return true;
     }
 
@@ -44,9 +47,13 @@ public class FTPUtil {
         InputStream stream = ftpClient.retrieveFileStream(file_i);
         String line = null;
         String content = "";
-        reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
-        while((line = reader.readLine()) != null) {
-            content += line;
+        try {
+            reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+            while ((line = reader.readLine()) != null) {
+                content += line;
+            }
+        }catch (IOException e){
+            stream.close();
         }
         ftpClient.completePendingCommand();
         reader.close();
@@ -64,5 +71,11 @@ public class FTPUtil {
                 ex.printStackTrace();
             }
         }
+    }
+
+    public boolean deleteFile(FTPClient ftpClient,String fileName) throws IOException {
+        boolean isDeleted = ftpClient.deleteFile(fileName);
+        //ftpClient.completePendingCommand();
+        return isDeleted;
     }
 }

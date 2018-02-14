@@ -55,7 +55,7 @@ public class SynchJob implements Job {
                     }
                 }
             }
-            Map<String,Map<String,List<String>>> pathToContentMap = new HashMap<>();
+            Map<String,Map<String,Map<String,String>>> pathToContentMap = new HashMap<>();
             for(String path_i : settingMap.keySet()){
                 for(String fileName : settingMap.get(path_i).keySet()) {
                     if (fileNameToPath.containsKey(path_i+fileName)) {
@@ -63,12 +63,12 @@ public class SynchJob implements Job {
                         for (String file_i : fileToDownloadList) {
                             String content = ftpUtil.readFile(ftpClient, file_i);
                             if(!pathToContentMap.containsKey(path_i)) {
-                                pathToContentMap.put(path_i, new HashMap<String,List<String>>());
+                                pathToContentMap.put(path_i, new HashMap<>());
                             }
                             if(!pathToContentMap.get(path_i).containsKey(fileName)){
-                                pathToContentMap.get(path_i).put(fileName, new ArrayList<>());
+                                pathToContentMap.get(path_i).put(fileName, new HashMap<>());
                             }
-                            pathToContentMap.get(path_i).get(fileName).add(content);
+                            pathToContentMap.get(path_i).get(fileName).put(file_i,content);
                         }
                     }
                 }
@@ -76,15 +76,16 @@ public class SynchJob implements Job {
             Auth auth = calloutService.auth();
             for(String path_i : settingMap.keySet()){
                 if(pathToContentMap.containsKey(path_i)){
-                    Map<String,List<String>> contentMap = pathToContentMap.get(path_i);
+                    Map<String,Map<String,String>> contentMap = pathToContentMap.get(path_i);
                     for(String fileName_i : contentMap.keySet()){
-                        List<String> contentList = contentMap.get(fileName_i);
-                        for(String content_i : contentList) {
+                        Map<String,String> fileNameToContentMap = contentMap.get(fileName_i);
+                        for(String fileNameWithPath_i : fileNameToContentMap.keySet()) {
+                            String content_i = fileNameToContentMap.get(fileNameWithPath_i);
                             String url = settingMap.get(path_i).get(fileName_i);
                             if(auth!=null) {
                                 Response response = calloutService.sendFileToSF(url,auth.getAccess_token(),content_i);
                                 if(response.getSuccess()){
-
+                                    ftpUtil.deleteFile(ftpClient,fileNameWithPath_i);
                                 }
                             }
                         }
