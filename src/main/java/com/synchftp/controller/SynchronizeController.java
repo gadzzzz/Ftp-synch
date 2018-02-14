@@ -41,16 +41,20 @@ public class SynchronizeController {
     private SynchUtil synchUtil;
 
     @PostMapping("/store")
-    public ResponseEntity storeFile(@RequestBody Setting setting){
-        ResponseEntity<Response> response = ResponseEntity.status(401).body(new Response("Invalid credentials"));
+    public ResponseEntity<List<Response>> storeFile(@RequestBody Setting setting){
+        List<Response> responseList = new ArrayList<>();
+        Response response = new Response("Invalid credentials");
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.status(401);
         FTPClient ftpClient = new FTPClient();
         try {
             if (ftpUtil.createConnection(setting, ftpClient)) {
                 if(!ftpClient.changeWorkingDirectory(setting.getPath())){
-                    response = ResponseEntity.status(404).body(new Response("Directory not exist"));
+                    response = new Response("Invalid credentials");
+                    responseBuilder = ResponseEntity.status(404);
                 }else{
                     if(ftpUtil.isFileExist(ftpClient,setting.getFileName())) {
-                        response = ResponseEntity.status(409).body(new Response("File already exist"));
+                        response = new Response("File already exist");
+                        responseBuilder = ResponseEntity.status(409);
                     }else{
                         OutputStream outputStream = ftpClient.storeFileStream(setting.getFileName());
                         String contentRaw = setting.getContentRaw();
@@ -59,7 +63,8 @@ public class SynchronizeController {
                         outputStream.flush();
                         outputStream.close();
                         ftpClient.completePendingCommand();
-                        response = ResponseEntity.status(200).body(new Response());
+                        response = new Response();
+                        responseBuilder = ResponseEntity.status(200);
                     }
                 }
             }else{
@@ -67,9 +72,11 @@ public class SynchronizeController {
             }
         }catch (Exception e){
             ftpUtil.closeConnection(ftpClient);
-            response = ResponseEntity.status(500).body(new Response(e.getMessage()));
+            response = new Response(e.getMessage());
+            responseBuilder = ResponseEntity.status(500);
         }
-        return response;
+        responseList.add(response);
+        return responseBuilder.body(responseList);
     }
 
     @PostMapping("/synch")
