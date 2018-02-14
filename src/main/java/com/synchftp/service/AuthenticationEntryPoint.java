@@ -13,6 +13,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by bhadz on 13.02.2018.
@@ -21,12 +23,21 @@ import java.io.PrintWriter;
 public class AuthenticationEntryPoint extends BasicAuthenticationEntryPoint {
     @Override
     public void commence(HttpServletRequest httpRequest, HttpServletResponse httpResponse, AuthenticationException authException) throws IOException, ServletException {
+        String requestUri = httpRequest.getRequestURI();
+        String responseRaw = "";
+        List<Response> responseList = new ArrayList<>();
         Response response = new Response(authException.getMessage());
+        responseList.add(response);
+        Gson gson = new Gson();
+        if("/api/v1/synch".equals(requestUri)) {
+            responseRaw = gson.toJson(responseList);
+        }else if("/api/v1/store".equals(requestUri)){
+            responseRaw = gson.toJson(response);
+        }
         httpResponse.setHeader("Content-type","application/json");
         httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         PrintWriter writer = httpResponse.getWriter();
-        Gson gson = new Gson();
-        writer.println(gson.toJson(response));
+        writer.println(responseRaw);
     }
 
     @Override
