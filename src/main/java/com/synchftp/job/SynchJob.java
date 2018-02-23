@@ -24,6 +24,7 @@ public class SynchJob implements Job {
         FTPClient ftpClient = (FTPClient) data.get("ftpClient");
         Setting settings = (Setting) data.get("settings");
         FTPUtil ftpUtil = (FTPUtil) data.get("ftpUtil");
+        boolean isProduction = (Boolean) data.get("isProduction");
         CalloutService calloutService = (CalloutService) data.get("calloutService");
         try {
             List<FileSetting> fileSettingRequestList =  settings.getFileSettingList();
@@ -73,7 +74,8 @@ public class SynchJob implements Job {
                     }
                 }
             }
-            Auth auth = calloutService.auth();
+            String envPrefix = isProduction?"login":"test";
+            Auth auth = calloutService.auth(envPrefix);
             for(String path_i : settingMap.keySet()){
                 if(pathToContentMap.containsKey(path_i)){
                     Map<String,Map<String,String>> contentMap = pathToContentMap.get(path_i);

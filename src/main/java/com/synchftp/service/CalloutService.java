@@ -37,14 +37,14 @@ public class CalloutService {
         return sendResponse.getBody();
     }
 
-    public Auth auth(){
+    public Auth auth(String envPrefix){
         UriComponentsBuilder loginBuilder = UriComponentsBuilder
-                .fromHttpUrl(env.getProperty("app_instance_url") + AUTH)
+                .fromHttpUrl("https://"+envPrefix+".salesforce.com" + AUTH)
                 .queryParam("grant_type","password")
-                .queryParam("client_id",env.getProperty("app_client_id"))
-                .queryParam("client_secret",env.getProperty("app_client_secret"))
-                .queryParam("username",env.getProperty("app_username"))
-                .queryParam("password",env.getProperty("app_password")+env.getProperty("app_token"));
+                .queryParam("client_id",env.getProperty(envPrefix+"_app_client_id"))
+                .queryParam("client_secret",env.getProperty(envPrefix+"_app_client_secret"))
+                .queryParam("username",env.getProperty(envPrefix+"_app_username"))
+                .queryParam("password",env.getProperty(envPrefix+"_app_password")+env.getProperty(envPrefix+"_app_token"));
         HttpHeaders loginHeaders = new HttpHeaders();
         loginHeaders.set("Accept","application/json");
         HttpEntity<?> loginEntity = new HttpEntity<String>(loginHeaders);

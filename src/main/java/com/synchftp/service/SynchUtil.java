@@ -27,13 +27,14 @@ public class SynchUtil {
     @Qualifier("ftpUtil")
     private FTPUtil ftpUtil;
 
-    public void scheduleJob(FTPClient ftpClient, Setting settings) throws SchedulerException {
+    public void scheduleJob(FTPClient ftpClient, Setting settings, boolean isProduction) throws SchedulerException {
         long currentTime = java.util.Calendar.getInstance().getTimeInMillis();
         JobDetail job = newJob(SynchJob.class).withIdentity("sync_rule"+currentTime, "synch_job").build();
         job.getJobDataMap().put("ftpClient", ftpClient);
         job.getJobDataMap().put("settings", settings);
         job.getJobDataMap().put("calloutService", calloutService);
         job.getJobDataMap().put("ftpUtil",ftpUtil);
+        job.getJobDataMap().put("isProduction",isProduction);
         TriggerBuilder triggerBuilder = newTrigger().withIdentity("trigger_synch_rule"+currentTime, "synch_job").startNow();
         Trigger trigger = triggerBuilder.build();
         if (!scheduler.checkExists(job.getKey()) && !scheduler.checkExists(trigger.getKey())) {

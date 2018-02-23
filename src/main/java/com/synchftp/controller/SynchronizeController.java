@@ -73,7 +73,7 @@ public class SynchronizeController {
     }
 
     @PostMapping("/synch")
-    public ResponseEntity<List<Response>> synch(@RequestBody SettingList settingList){
+    public ResponseEntity<List<Response>> synch(@RequestBody SettingList settingList,@RequestHeader("IsAProduction") boolean isProduction){
         Map<String,Response> responseMap = new HashMap<>();
         for(Setting setting_i : settingList.getManufacturers()){
             responseMap.put(setting_i.getUrl(),new Response("Invalid credentials"));
@@ -82,7 +82,7 @@ public class SynchronizeController {
             FTPClient ftpClient = new FTPClient();
             try {
                 if (ftpUtil.createConnection(setting_i, ftpClient)) {
-                    synchUtil.scheduleJob(ftpClient, setting_i);
+                    synchUtil.scheduleJob(ftpClient, setting_i,isProduction);
                     responseMap.put(setting_i.getUrl(),new Response());
                 } else {
                     ftpUtil.closeConnection(ftpClient);
