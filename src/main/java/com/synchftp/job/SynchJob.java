@@ -85,7 +85,7 @@ public class SynchJob implements Job {
                             String content_i = fileNameToContentMap.get(fileNameWithPath_i);
                             String url = settingMap.get(path_i).get(fileName_i);
                             if(auth!=null) {
-                                Response response = calloutService.sendFileToSF(url,auth.getAccess_token(),content_i);
+                                Response response = calloutService.sendFileToSF(url,auth,content_i);
                                 if(response.getSuccess()){
                                     ftpUtil.deleteFile(ftpClient,fileNameWithPath_i);
                                 }

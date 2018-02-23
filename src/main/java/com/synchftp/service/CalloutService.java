@@ -27,13 +27,13 @@ public class CalloutService {
     @Autowired
     private Environment env;
 
-    public Response sendFileToSF(String endpoint,String accessToken, String content){
+    public Response sendFileToSF(String endpoint,Auth auth, String content){
         HttpHeaders sendHeaders = new HttpHeaders();
         sendHeaders.set("Content-type","application/xml");
         sendHeaders.set("Accept","application/json");
-        sendHeaders.set("Authorization","Bearer "+accessToken);
+        sendHeaders.set("Authorization","Bearer "+auth.getAccess_token());
         HttpEntity<?> sendEntity = new HttpEntity<String>(content,sendHeaders);
-        ResponseEntity<Response> sendResponse = restTemplate.exchange(env.getProperty("app_instance_url")+REST+endpoint, HttpMethod.POST,sendEntity,Response.class);
+        ResponseEntity<Response> sendResponse = restTemplate.exchange(auth.getInstance_url()+REST+endpoint, HttpMethod.POST,sendEntity,Response.class);
         return sendResponse.getBody();
     }
 
