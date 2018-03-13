@@ -12,7 +12,7 @@ import java.io.*;
  */
 public class FTPUtil {
 
-    public FTPFile[] directoryList(FTPClient ftpClient, String path) throws IOException {
+    public FTPFile[] fileList(FTPClient ftpClient, String path) throws IOException {
         FTPFile[] fileList = ftpClient.listFiles(path);
         return fileList;
     }
@@ -75,7 +75,6 @@ public class FTPUtil {
 
     public boolean deleteFile(FTPClient ftpClient,String fileName) throws IOException {
         boolean isDeleted = ftpClient.deleteFile(fileName);
-        //ftpClient.completePendingCommand();
         return isDeleted;
     }
 }

@@ -25,14 +25,6 @@ import static org.quartz.JobBuilder.newJob;
 public class SynchronizeController {
 
     @Autowired
-    @Qualifier("scheduler")
-    private Scheduler scheduler;
-
-    @Autowired
-    @Qualifier("calloutService")
-    private CalloutService calloutService;
-
-    @Autowired
     @Qualifier("ftpUtil")
     private FTPUtil ftpUtil;
 

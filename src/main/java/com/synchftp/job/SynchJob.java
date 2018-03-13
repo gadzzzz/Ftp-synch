@@ -11,6 +11,10 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 /**
@@ -29,15 +33,29 @@ public class SynchJob implements Job {
         try {
             List<FileSetting> fileSettingRequestList =  settings.getFileSettingList();
             Map<String,Map<String,String>> settingMap = new HashMap<>();
-            for(FileSetting setting2 : fileSettingRequestList){
-                if(!settingMap.containsKey(setting2.getPath())){
-                    settingMap.put(setting2.getPath(),new HashMap<>());
+            for(FileSetting setting_i : fileSettingRequestList){
+                String path = setting_i.getPath();
+                if(settings.getUrl().equalsIgnoreCase("ftp.ashleyfurniture.com")
+                        && setting_i.getPath().equalsIgnoreCase("/CUSTEDI/3302800-/Failed")){
+                    TimeZone timeZone = TimeZone.getTimeZone("EST");
+                    ZonedDateTime zonedDateTime = ZonedDateTime.now(timeZone.toZoneId());
+                    LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
+                    String subFolder = "_" + localDateTime.getYear() + "_8501";
+                    if(localDateTime.getMonthValue()/10 == 0){
+                        subFolder = "0" + localDateTime.getMonthValue() + subFolder;
+                    }else{
+                        subFolder = localDateTime.getMonthValue() + subFolder;
+                    }
+                    path = path + "/" + subFolder;
                 }
-                settingMap.get(setting2.getPath()).put(setting2.getName(),setting2.getUrl());
+                if(!settingMap.containsKey(path)){
+                    settingMap.put(path,new HashMap<>());
+                }
+                settingMap.get(path).put(setting_i.getName(),setting_i.getUrl());
             }
             Map<String,FTPFile[]> pathToFileMap = new HashMap<>();
             for(String path_i : settingMap.keySet()){
-                pathToFileMap.put(path_i,ftpUtil.directoryList(ftpClient,path_i));
+                pathToFileMap.put(path_i,ftpUtil.fileList(ftpClient,path_i));
             }
             Map<String,List<String>> fileNameToPath = new HashMap<>();
             for(String path_i : settingMap.keySet()){
@@ -87,7 +105,9 @@ public class SynchJob implements Job {
                             if(auth!=null) {
                                 Response response = calloutService.sendFileToSF(url,auth,content_i);
                                 if(response.getSuccess()){
-                                    ftpUtil.deleteFile(ftpClient,fileNameWithPath_i);
+                                    if(isProduction) {
+                                        ftpUtil.deleteFile(ftpClient, fileNameWithPath_i);
+                                    }
                                 }
                             }
                         }
