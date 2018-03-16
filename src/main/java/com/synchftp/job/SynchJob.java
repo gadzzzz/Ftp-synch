@@ -40,7 +40,7 @@ public class SynchJob implements Job {
                     TimeZone timeZone = TimeZone.getTimeZone("EST");
                     ZonedDateTime zonedDateTime = ZonedDateTime.now(timeZone.toZoneId());
                     LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
-                    String subFolder = "_" + localDateTime.getYear() + "_8501";
+                    String subFolder = "_" + localDateTime.getYear() + "_850";
                     if(localDateTime.getMonthValue()/10 == 0){
                         subFolder = "0" + localDateTime.getMonthValue() + subFolder;
                     }else{
