@@ -14,6 +14,7 @@ public class Setting {
     private String contentRaw;
     private String fileName;
     private String path;
+    private boolean secured;
 
     public String getUsername() {
         return username;
@@ -77,5 +78,13 @@ public class Setting {
 
     public void setPath(String path) {
         this.path = path;
+    }
+
+    public boolean getSecured() {
+        return secured;
+    }
+
+    public void setSecured(boolean secured) {
+        this.secured = secured;
     }
 }

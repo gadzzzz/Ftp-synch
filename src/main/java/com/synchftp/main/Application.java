@@ -2,6 +2,7 @@ package com.synchftp.main;
 
 import com.synchftp.service.CalloutService;
 import com.synchftp.service.FTPUtil;
+import com.synchftp.service.SFTPUtil;
 import com.synchftp.service.SynchUtil;
 import org.quartz.Scheduler;
 import org.springframework.boot.SpringApplication;
@@ -61,6 +62,9 @@ public class Application  extends SpringBootServletInitializer {
     public FTPUtil ftpUtil(){
         return new FTPUtil();
     }
+
+    @Bean
+    public SFTPUtil sftpUtil() {return new SFTPUtil();};
 
     @Bean
     public SynchUtil synchUtil(){

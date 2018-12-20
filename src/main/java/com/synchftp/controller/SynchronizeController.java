@@ -1,9 +1,13 @@
 package com.synchftp.controller;
+import com.synchftp.connector.api.Connector;
+import com.synchftp.connector.impl.FTPConnector;
+import com.synchftp.connector.impl.SFTPConnector;
 import com.synchftp.model.Response;
 import com.synchftp.model.Setting;
 import com.synchftp.model.SettingList;
 import com.synchftp.service.CalloutService;
 import com.synchftp.service.FTPUtil;
+import com.synchftp.service.SFTPUtil;
 import com.synchftp.service.SynchUtil;
 import org.apache.commons.net.ftp.FTPClient;
 import org.quartz.*;
@@ -12,6 +16,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
 
@@ -29,38 +34,26 @@ public class SynchronizeController {
     private FTPUtil ftpUtil;
 
     @Autowired
+    @Qualifier("sftpUtil")
+    private SFTPUtil sftpUtil;
+
+    @Autowired
     @Qualifier("synchUtil")
     private SynchUtil synchUtil;
 
     @PostMapping("/store")
     public ResponseEntity<Response> storeFile(@RequestBody Setting setting){
         ResponseEntity<Response> response = ResponseEntity.status(401).body(new Response("Invalid credentials"));
-        FTPClient ftpClient = new FTPClient();
-        try {
-            if (ftpUtil.createConnection(setting, ftpClient)) {
-                if(!ftpClient.changeWorkingDirectory(setting.getPath())){
-                    response = ResponseEntity.status(404).body(new Response("Invalid credentials"));
-                }else{
-                    if(ftpUtil.isFileExist(ftpClient,setting.getFileName())) {
-                        response = ResponseEntity.status(409).body(new Response("File already exist"));
-                    }else{
-                        OutputStream outputStream = ftpClient.storeFileStream(setting.getFileName());
-                        String contentRaw = setting.getContentRaw();
-                        byte[] fileContent = Base64.getDecoder().decode(contentRaw);
-                        outputStream.write(fileContent);
-                        outputStream.flush();
-                        outputStream.close();
-                        ftpClient.completePendingCommand();
-                        response = ResponseEntity.status(200).body(new Response());
-                    }
-                }
-            }else{
-                ftpUtil.closeConnection(ftpClient);
-            }
-        }catch (Exception e){
-            ftpUtil.closeConnection(ftpClient);
-            response = ResponseEntity.status(500).body(new Response(e.getMessage()));
+        Connector connector;
+        Object util;
+        if(setting.getSecured()) {
+            connector = new SFTPConnector();
+            util = sftpUtil;
+        }else{
+            connector = new FTPConnector();
+            util = ftpUtil;
         }
+        response = connector.store(setting,util,response);
         return response;
     }
 
@@ -71,18 +64,16 @@ public class SynchronizeController {
             responseMap.put(setting_i.getUrl(),new Response("Invalid credentials"));
         }
         for(Setting setting_i : settingList.getManufacturers()) {
-            FTPClient ftpClient = new FTPClient();
-            try {
-                if (ftpUtil.createConnection(setting_i, ftpClient)) {
-                    synchUtil.scheduleJob(ftpClient, setting_i,isProduction);
-                    responseMap.put(setting_i.getUrl(),new Response());
-                } else {
-                    ftpUtil.closeConnection(ftpClient);
-                }
-            }catch (Exception e){
-                ftpUtil.closeConnection(ftpClient);
-                responseMap.put(setting_i.getUrl(),new Response(e.getMessage()));
+            Connector connector;
+            Object util;
+            if(setting_i.getSecured()) {
+                connector = new SFTPConnector();
+                util = sftpUtil;
+            }else{
+                connector = new FTPConnector();
+                util = ftpUtil;
             }
+            connector.run(setting_i,util,responseMap,synchUtil,isProduction);
         }
         List<Response> responseList = new ArrayList<>();
         for(String url_i : responseMap.keySet()){
