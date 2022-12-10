@@ -39,7 +39,7 @@ public class CalloutService {
 
     public Auth auth(String envPrefix){
         UriComponentsBuilder loginBuilder = UriComponentsBuilder
-                .fromHttpUrl("https://"+envPrefix+".salesforce.com" + AUTH)
+                .fromHttpUrl("https://"+env.getProperty(envPrefix+"domain")+".salesforce.com" + AUTH)
                 .queryParam("grant_type","password")
                 .queryParam("client_id",env.getProperty(envPrefix+"_app_client_id"))
                 .queryParam("client_secret",env.getProperty(envPrefix+"_app_client_secret"))
